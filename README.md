@@ -2,7 +2,7 @@
 
 # TRIPOD-Code
 
-This repository contains the code used in [Code Sharing In Prediction Model Research: A Scoping Review](#TODO).
+This repository contains the code used in [AI-assisted scoping review of code sharing in clinical prediction model research](https://www.nature.com/articles/s41591-026-04691-1), published in *Nature Medicine*.
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -155,9 +155,25 @@ Running this process end-to-end takes about six hours using the existing PMID - 
 
 ## Reference
 
-If you use this repository, please cite our [paper](#TODO):
+If you use this repository, please cite our [paper](https://www.nature.com/articles/s41591-026-04691-1):
 
-#TODO: insert citation
+```
+@article{sounackAIassistedScopingReview2026,
+  title = {{{AI}}-Assisted Scoping Review of Code Sharing in Clinical Prediction Model Research},
+  author = {Sounack, Thomas and Giancotti, Raffaele and Gao, Catherine A. and Barre{\~n}ada, Lasai and Lee, Hyeonhoon and Lee, Hyung-Chul and Celi, Leo Anthony and Moons, Karel G. M. and Collins, Gary S. and Lindvall, Charlotta and Pollard, Tom},
+  year = 2026,
+  month = oct,
+  journal = {Nature Medicine},
+  pages = {1--8},
+  publisher = {Nature Publishing Group},
+  issn = {1546-170X},
+  doi = {10.1038/s41591-026-04691-1},
+  abstract = {Clinical prediction models are increasingly deployed to support diagnostic and prognostic decisions, making reproducibility essential for assessing their reliability and generalizability. Analytical code supports independent assessment of these processes, yet its availability in the literature remains limited. This scoping review quantifies current practices in sharing analytical code to inform the development of TRIPOD-Code, a reporting guideline for code availability and reproducibility. Here a large-language-model-assisted pipeline was developed to screen articles citing TRIPOD or TRIPOD+AI, extract repository links and assess retrieved repositories against 14 predefined reproducibility-related features. Among 3,967 articles, 482 (12.2\%) included code-sharing statements. Sharing prevalence varied widely by journal and country. Repository assessment showed substantial heterogeneity in reproducibility features. These findings underscore the need for clearer expectations beyond code availability, including documentation, dependency specification and executable structure. Strengthening these practices may improve the usability of clinical prediction model studies and support their deployment in real-world clinical settings.},
+  copyright = {2026 The Author(s)},
+  langid = {english},
+  keywords = {Data publication and archiving,Literature mining,Research data,Software},
+}
+```
 
 If you would like to cite our repository as well, you can do so using this citation:
 ```
