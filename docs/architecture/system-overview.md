@@ -1,14 +1,19 @@
 # System overview
 
-Baseline: e217630579a2521c92e04449756326331f740a43, main, inspected 2026-11-06. No prior AGENTS.md/scoped instructions existed; CONTRIBUTING.md governs original contributions. Isolated branch: codex/research-workspace. Local exact-commit reconnaissance preserved data/figure tree entries without downloading 41 large blobs. Local disk exhaustion and restricted network prevented continued local development; implementation continues through GitHub and cloud CI.
+Inspected baseline: `e217630579a2521c92e04449756326331f740a43` (main), 2026-11-06. Implementation: core `6a28882`, services/API `5e5e958`, frontend/desktop `fdf57fc`, toolchain fixes `cf6519a`. Isolated branch: `codex/research-workspace`, draft PR #1. Original corpus, annotations, publication figures, prompts and scientific schemas remain intact. CONTRIBUTING.md was read before editing; no repository AGENTS.md existed at baseline.
 
-## Original behavior
-Notebooks 00–04 orchestrate references, PMC full text, paper classification, repository retrieval/assessment, evaluation and figures. LLM_wrapper uses OpenAI Responses structured parsing. structs.py defines PaperAssessment and RepoAssessment. clone_and_extract_tree delegates acquisition and text/token extraction. Original data, annotations, figures and attribution remain preserved.
+## Current architecture
 
-Notebook 01 loads trusted-local pickle or remote Hugging Face dataset code; neither is exposed as an upload feature. Published-output inspection can be offline; new AI calls and downloads require network.
+Original notebooks 00–04 remain research entry points. The optional notebook 05 demonstrates extracted services offline. React/TypeScript calls an authenticated loopback FastAPI service; `src/tripod` performs computation independently of HTTP. One background worker runs assessments. SQLite WAL stores datasets, jobs and per-record checkpoints; originals and normalized JSON live outside the checkout.
 
-## Application
-ADR-0001 records the accepted architecture. Module map and API contracts are updated with implementation; validation-plan records actual checks. The Python core is callable outside the API. Application state lives outside the checkout by default. Human labels and model output stay separate. Synthetic fixture replay demonstrates software, not scientific accuracy.
+Tauri owns the bundled PyInstaller Python process, random session token, readiness, narrow export IPC and shutdown. Normal installed use requires no separate Python, Node, Git, Conda or notebooks. See [ADR-0001](../decisions/ADR-0001-app-architecture.md), [module map](module-map.md), [lineage](data-lineage.md) and [API](api-contracts.md).
 
-## Priorities
-P0: provenance-safe processing, bounded imports, durable workers/auth, compatible resume, evaluation and demo. P1: accessible review UI and desktop lifecycle/package workflow. P2: signed/notarized distribution, larger data scaling and independent platform validation. P3: explicit safe adapters for legacy full-text indexing/every repository provider and reproduction of published figures. Treat unfinished priorities as backlog, not delivered features.
+## Boundaries
+
+Offline operations: imports, inspection, synthetic fixture replay, review, paired Boolean evaluation and exports. The demo is six explicitly synthetic records and makes no accuracy claim. Human labels stay separate from model results.
+
+Network operations: live OpenAI assessment and optional public GitHub snapshot download. Live jobs require explicit consent, a model identifier and at most 20 records, with one request per record and no hidden SDK retries. Building dependencies also requires network.
+
+Legacy notebooks retain PMC/Hugging Face indexing, trusted-local compressed pickle, plotting libraries and historical provider CLIs. These are not app upload or automatic launch behavior. The app does not execute downloaded repositories or accept pickle.
+
+Native builds require macOS, Xcode command-line tools, Python 3.13, Node 22 and Rust. Signed/notarized distribution requires maintainer-owned Apple credentials. See [installation](../application.md), [validation evidence](../research/validation-plan.md) and [prioritized backlog](../backlog.md). The app has not reproduced the full published analysis.

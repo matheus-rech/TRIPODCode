@@ -15,3 +15,11 @@ Baseline e217630579a2521c92e04449756326331f740a43. Source trace, not a claim of 
 Small raw annotation CSV headers were inspected. Large data inventoried by Git hash and byte size, not loaded; full-text pickle is about 62.6 MB, full-text Parquet about 71.5 MB. The app must not accept pickle or overwrite published artifacts.
 
 Review finding: 02b initially assigns has_repo_gt from predicted repo_url and has_repo_pred from gt_repo_url; later exact-URL code uses correct arrays. App evaluation must explicitly name human/model arrays and version its metrics; published notebook conclusions are not silently rewritten.
+
+## Implemented service lineage (5e5e958)
+
+`workflows.load_reference_group` preserves explicit file order and the original first-row drop; `combine_reference_groups` preserves first-PMID selection within groups and exact cross-group deduplication, while rejecting conflicting cross-group rows. `attach_full_text` takes a supplied mapping and removes missing full text. `prepare_paper_annotations` joins human labels with validated many-to-one cardinality. `write_prepared_references` writes a new Parquet and lineage JSON without overwriting. The historical PMC index acquisition remains in notebook 01.
+
+Application import → preserved original bytes/SHA-256 → normalized records/SHA-256 → SQLite dataset metadata. Job creation records input, scientific source/build digest, dependency/Python versions, requested model, prompt/schema hashes, stage, extraction/metric versions and configuration. Each result is persisted transactionally with record hash and provider metadata (resolved model/response ID/usage when live). GitHub acquisition adds immutable commit and extracted-content digest. JSON export carries run provenance, results and evaluation; original uploads remain separate.
+
+Legacy LLM checkpoints are now v2 JSON under checkpoints/{identity}.checkpoint.json; timestamp/model-only CSV files are ignored as resume sources. CSV is a derived compatibility output. New app checkpoints live in SQLite and never collide with notebook CSV outputs. Resume never merges scientific identities.

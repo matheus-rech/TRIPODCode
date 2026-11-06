@@ -11,8 +11,8 @@ Legacy research: src/llm_utils, src/repo_utils and notebooks/00–04. Applicatio
 Development: python3.13 -m venv .venv; .venv/bin/python -m pip install -e '.[dev]'.
 Tests: .venv/bin/python -m pytest tests -q.
 Frontend: cd frontend && npm ci && npm test && npm run build.
-Desktop: python desktop/build.py.
-These are target entry points; consult validation-plan.md for executed evidence, current support and platform limitations. The original Conda setup remains in CONTRIBUTING.md.
+Desktop (macOS, Xcode command-line tools, Python 3.13, Node 22, Rust): bash scripts/build_macos.sh.
+Python tests/packaging and frontend compilation have executed in Actions. Consult docs/research/validation-plan.md for commit-specific evidence and remaining checks, and docs/application.md for setup/demo/installation. The original Conda setup remains in CONTRIBUTING.md.
 
 ## Research integrity
 Never silently change inclusion criteria, prompt text, schemas, null semantics, denominators, metrics, labels or published conclusions. Document and version methodological changes separately. Human annotations and model outputs occupy different namespaces. Failure is not a negative assessment; missing and inapplicable are distinct. Record input/prompt/schema/model/code identities and filtering configuration. Resume only compatible runs, never based on model name alone. Use small fixtures and recorded reference outputs for equivalence checks.
