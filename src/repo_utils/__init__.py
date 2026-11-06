@@ -28,4 +28,8 @@ Example
 ...     print(result.output)
 """
 
-from .main_extractor import clone_and_extract_tree, RepoStatus
+def __getattr__(name):
+    if name in ("clone_and_extract_tree", "RepoStatus"):
+        from . import main_extractor
+        return getattr(main_extractor, name)
+    raise AttributeError(name)

@@ -2,6 +2,8 @@
 
 # TRIPOD-Code
 
+This fork adds a local research workspace with a React interface, FastAPI services and a bundled macOS application. Start with the [application and installation guide](docs/application.md), [architecture](docs/architecture/system-overview.md), [validation evidence](docs/research/validation-plan.md), and [agent guide](AGENTS.md). The original research documentation and attribution follow below.
+
 This repository contains the code used in [AI-assisted scoping review of code sharing in clinical prediction model research](https://www.nature.com/articles/s41591-026-04691-1), published in *Nature Medicine*.
 
 ## Table of Contents

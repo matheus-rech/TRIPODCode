@@ -211,3 +211,20 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 .vscode/
+# Application development/state
+.serena/
+.venv/
+node_modules/
+frontend/dist/
+desktop/target/
+desktop/binaries/
+build/
+dist/
+*.sqlite*
+.tripod/
+desktop/src-tauri/binaries/
+frontend/test-results/
+frontend/playwright-report/
+*.tsbuildinfo
+src/tripod/build-info.json
+.build-venv/

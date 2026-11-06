@@ -36,6 +36,7 @@ from repo_utils.repo_providers import (
     OSFCloner,
     DOICloner,
     extract_file_tree,
+    cache_name,
 )
 from repo_utils.tokenizer import extract_text_from_file, tokenize_text
 
@@ -233,30 +234,29 @@ class TestExtractFileTree:
 
 
 class TestDefaultGitCloner:
-    @patch("repo_utils.repo_providers.git.Repo")
-    def test_clone_creates_directory(self, mock_git_repo, tmp_path):
-        """Test that cloning creates the expected directory."""
+    @patch('repo_utils.repo_providers.public_https')
+    @patch('repo_utils.repo_providers.subprocess.run')
+    def test_clone_cache_tracks_owner_and_commit(self, run, public, tmp_path):
+        run.return_value.stdout = 'a' * 40
         cloner = DefaultGitCloner()
-        repo_url = "https://github.com/user/test-repo"
+        url = 'https://github.com/owner/test-repo'
+        first = cloner.clone(url, tmp_path)
+        first.mkdir()
+        assert first == tmp_path / cache_name(url)
+        assert cloner.clone(url, tmp_path) == first
+        assert run.call_count == 2
+        other = cloner.clone('https://github.com/other/test-repo', tmp_path)
+        assert other != first
+        assert run.call_count == 4
 
-        result = cloner.clone(repo_url, tmp_path)
-
-        assert result == tmp_path / "test-repo"
-        mock_git_repo.clone_from.assert_called_once()
-
-    @patch("repo_utils.repo_providers.git.Repo")
-    def test_clone_skips_existing_repo(self, mock_git_repo, tmp_path):
-        """Test that cloning skips if repo already exists."""
-        # Create existing repo directory
-        existing_repo = tmp_path / "existing-repo"
-        existing_repo.mkdir()
-        (existing_repo / "file.txt").write_text("content")
-
-        cloner = DefaultGitCloner()
-        result = cloner.clone("https://github.com/user/existing-repo", tmp_path)
-
-        assert result == existing_repo
-        mock_git_repo.clone_from.assert_not_called()
+    @patch('repo_utils.repo_providers.public_https')
+    @patch('repo_utils.repo_providers.subprocess.run')
+    def test_unverified_cache_is_never_reused(self, run, public, tmp_path):
+        url = 'https://github.com/owner/repo'
+        (tmp_path / cache_name(url)).mkdir()
+        with pytest.raises(ValueError, match='Incomplete cache'):
+            DefaultGitCloner().clone(url, tmp_path)
+        run.assert_not_called()
 
 
 class TestZenodoCloner:
@@ -277,7 +277,7 @@ class TestZenodoCloner:
 
 
 class TestFigshareCloner:
-    @patch("requests.get")
+    @patch("repo_utils.repo_providers.request_public")
     def test_clone_fetches_article_files(self, mock_get, tmp_path):
         """Test that Figshare cloner fetches article files."""
         # Mock metadata response
@@ -297,7 +297,7 @@ class TestFigshareCloner:
 
 
 class TestDOICloner:
-    @patch("requests.head")
+    @patch("repo_utils.repo_providers.request_public")
     def test_doi_resolves_to_github(self, mock_head, tmp_path):
         """Test that DOI resolver redirects to GitHub."""
         mock_response = MagicMock()
@@ -312,7 +312,7 @@ class TestDOICloner:
             cloner.clone("https://doi.org/10.1234/test", tmp_path)
 
         mock_head.assert_called_once_with(
-            "https://doi.org/10.1234/test", allow_redirects=True
+            "https://doi.org/10.1234/test", method="HEAD"
         )
 
 

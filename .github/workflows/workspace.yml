@@ -1,0 +1,71 @@
+name: Research workspace
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: workspace-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            src
+            backend
+            tests
+            scripts
+            pyproject.toml
+            MANIFEST.in
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install -e '.[dev]'
+      - name: Cache public tokenizer vocabulary before offline tests
+        run: python -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"
+      - run: python -m pytest -q
+      - run: python -m build
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install -e '.[dev]'
+      - run: npm ci
+        working-directory: frontend
+      - run: npm audit --audit-level=moderate
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+      - run: npm test
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Browser integration with real offline backend
+        run: |
+          export TRIPOD_SESSION_TOKEN='e2e-token-e2e-token-e2e-token-e2e-token-e2e-token-e2e-token-'
+          python -m backend.main --port 8765 --data-dir /tmp/tripod-e2e > /tmp/backend.log 2>&1 &
+          backend_pid=$!
+          trap 'kill $backend_pid' EXIT
+          python scripts/wait_for_backend.py
+          npm --prefix frontend run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-build-and-lock
+          path: |
+            frontend/dist
+            frontend/package-lock.json
+            frontend/playwright-report
+            frontend/test-results

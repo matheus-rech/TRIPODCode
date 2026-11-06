@@ -1,0 +1,26 @@
+name: Original baseline verification
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/research-workspace]
+    paths: ['.github/workflows/baseline.yml']
+permissions:
+  contents: read
+jobs:
+  original:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: e217630579a2521c92e04449756326331f740a43
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          environment-file: environment.yaml
+          activate-environment: TRIPOD-Code
+          auto-activate-base: false
+      - name: Exact original source and environment baseline
+        shell: bash -el {0}
+        run: |
+          git rev-parse HEAD
+          python -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"
+          python -m pytest tests -q
