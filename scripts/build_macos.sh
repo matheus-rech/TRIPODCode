@@ -10,6 +10,5 @@ target="$(rustc -vV | sed -n 's/^host: //p')"
 if test -f frontend/package-lock.json; then npm --prefix frontend ci; else npm --prefix frontend install; fi
 npm --prefix frontend test
 npm --prefix frontend run build
-cargo install tauri-cli --version '^2' --locked
 cd desktop/src-tauri
-cargo tauri build --locked
+npx --yes @tauri-apps/cli@2.12.4 build --locked

@@ -32,7 +32,7 @@
     "externalBin": [
       "binaries/tripod-backend"
     ],
-    "icon": [],
+    "icon": ["icons/icon.png", "icons/icon.icns"],
     "macOS": {
       "minimumSystemVersion": "12.0"
     }

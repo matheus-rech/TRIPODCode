@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: macos-15
+          - runner: macos-26
             target: aarch64-apple-darwin
           - runner: macos-15-intel
             target: x86_64-apple-darwin
@@ -29,6 +29,13 @@ jobs:
         with:
           node-version: '22'
       - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            desktop/src-tauri/target
+          key: macos-${{ matrix.target }}-cargo-${{ hashFiles('desktop/src-tauri/Cargo.lock') }}
       - run: python -m pip install -e '.[dev]'
       - run: python scripts/build_sidecar.py
       - run: python scripts/smoke_sidecar.py desktop/src-tauri/binaries/tripod-backend-${{ matrix.target }}
@@ -36,8 +43,7 @@ jobs:
         working-directory: frontend
       - run: npm test && npm run build
         working-directory: frontend
-      - run: cargo install tauri-cli --version '^2' --locked
-      - run: cargo tauri build --locked
+      - run: npx --yes @tauri-apps/cli@2.12.4 build --locked
         working-directory: desktop/src-tauri
       - run: python scripts/smoke_desktop.py desktop/src-tauri/target/release/bundle/macos/TRIPODCode.app
       - name: Record resolved toolchain
@@ -45,6 +51,7 @@ jobs:
           python -m pip freeze > build/python-freeze.txt
           rustc --version > build/rust-version.txt
           node --version > build/node-version.txt
+          npx --yes @tauri-apps/cli@2.12.4 --version > build/tauri-version.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
