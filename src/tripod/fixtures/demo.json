@@ -1,0 +1,228 @@
+[
+  {
+    "id": "demo-001",
+    "title": "Prediction model with shared code",
+    "text": "SYNTHETIC DEMO: Prediction model with shared code. Not evidence from a published article.",
+    "repo_url": "https://github.com/example/synthetic",
+    "repo_content": "# Synthetic repository\nprint(\"demo\")",
+    "human": {
+      "article": {
+        "is_match": true
+      },
+      "repository": {
+        "contains_readme": true,
+        "implements_tests": false
+      }
+    },
+    "demo": {
+      "article": {
+        "status": "succeeded",
+        "assessment": {
+          "is_match": true,
+          "reason": "Synthetic prediction-model example",
+          "country_first_author_institution": "Brazil",
+          "repo_url": "https://github.com/example/synthetic",
+          "code_statement_locations": [
+            "code_availability_section"
+          ],
+          "code_statement_sentence": "Synthetic example only."
+        }
+      },
+      "repository": {
+        "status": "succeeded",
+        "assessment": {
+          "is_empty": false,
+          "contains_readme": true,
+          "readme_purpose_and_outputs": true,
+          "contains_requirements": true,
+          "requirements_dependency_versions": true,
+          "contains_license": true,
+          "sufficient_code_documentation": false,
+          "is_modular_and_structured": false,
+          "implements_tests": true,
+          "fixes_seed_if_stochastic": null,
+          "lists_hardware_requirements": false,
+          "contains_link_to_paper": false,
+          "contains_citation": false,
+          "includes_data_or_sample": false,
+          "comments_and_explanations": "Synthetic recorded fixture; no repository was downloaded.",
+          "coding_languages": [
+            "python"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "id": "demo-002",
+    "title": "Descriptive study outside scope",
+    "text": "SYNTHETIC DEMO: Descriptive study outside scope. Not evidence from a published article.",
+    "repo_url": null,
+    "repo_content": "# Synthetic repository\nprint(\"demo\")",
+    "human": {
+      "article": {
+        "is_match": false
+      },
+      "repository": {
+        "contains_readme": true,
+        "implements_tests": true
+      }
+    },
+    "demo": {
+      "article": {
+        "status": "succeeded",
+        "assessment": {
+          "is_match": false,
+          "reason": "Synthetic descriptive study",
+          "country_first_author_institution": "Brazil",
+          "repo_url": null,
+          "code_statement_locations": null,
+          "code_statement_sentence": null
+        }
+      },
+      "repository": {
+        "status": "inapplicable",
+        "assessment": null
+      }
+    }
+  },
+  {
+    "id": "demo-003",
+    "title": "Article text unavailable",
+    "text": null,
+    "repo_url": "https://github.com/example/synthetic",
+    "repo_content": null,
+    "human": {
+      "article": {
+        "is_match": true
+      },
+      "repository": {
+        "contains_readme": true,
+        "implements_tests": true
+      }
+    },
+    "demo": {
+      "article": {
+        "status": "missing",
+        "assessment": null
+      },
+      "repository": {
+        "status": "missing",
+        "assessment": null
+      }
+    }
+  },
+  {
+    "id": "demo-004",
+    "title": "Provider failure example",
+    "text": "SYNTHETIC DEMO: Provider failure example. Not evidence from a published article.",
+    "repo_url": "https://github.com/example/synthetic",
+    "repo_content": "# Synthetic repository\nprint(\"demo\")",
+    "human": {
+      "article": {
+        "is_match": true
+      },
+      "repository": {
+        "contains_readme": true,
+        "implements_tests": true
+      }
+    },
+    "demo": {
+      "article": {
+        "status": "failed",
+        "assessment": null
+      },
+      "repository": {
+        "status": "failed",
+        "assessment": null
+      }
+    }
+  },
+  {
+    "id": "demo-005",
+    "title": "Repository without a README",
+    "text": "SYNTHETIC DEMO: Repository without a README. Not evidence from a published article.",
+    "repo_url": "https://github.com/example/synthetic",
+    "repo_content": "# Synthetic repository\nprint(\"demo\")",
+    "human": {
+      "article": {
+        "is_match": true
+      },
+      "repository": {
+        "contains_readme": false,
+        "implements_tests": true
+      }
+    },
+    "demo": {
+      "article": {
+        "status": "succeeded",
+        "assessment": {
+          "is_match": true,
+          "reason": "Synthetic prediction-model example",
+          "country_first_author_institution": "Brazil",
+          "repo_url": "https://github.com/example/synthetic",
+          "code_statement_locations": [
+            "code_availability_section"
+          ],
+          "code_statement_sentence": "Synthetic example only."
+        }
+      },
+      "repository": {
+        "status": "succeeded",
+        "assessment": {
+          "is_empty": false,
+          "contains_readme": false,
+          "readme_purpose_and_outputs": null,
+          "contains_requirements": false,
+          "requirements_dependency_versions": null,
+          "contains_license": true,
+          "sufficient_code_documentation": false,
+          "is_modular_and_structured": false,
+          "implements_tests": false,
+          "fixes_seed_if_stochastic": null,
+          "lists_hardware_requirements": false,
+          "contains_link_to_paper": false,
+          "contains_citation": false,
+          "includes_data_or_sample": false,
+          "comments_and_explanations": "Synthetic recorded fixture; no repository was downloaded.",
+          "coding_languages": [
+            "python"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "id": "demo-006",
+    "title": "Repository not applicable",
+    "text": "SYNTHETIC DEMO: Repository not applicable. Not evidence from a published article.",
+    "repo_url": null,
+    "repo_content": "# Synthetic repository\nprint(\"demo\")",
+    "human": {
+      "article": {
+        "is_match": false
+      },
+      "repository": {
+        "contains_readme": true,
+        "implements_tests": true
+      }
+    },
+    "demo": {
+      "article": {
+        "status": "succeeded",
+        "assessment": {
+          "is_match": false,
+          "reason": "Synthetic descriptive study",
+          "country_first_author_institution": "Brazil",
+          "repo_url": null,
+          "code_statement_locations": null,
+          "code_statement_sentence": null
+        }
+      },
+      "repository": {
+        "status": "inapplicable",
+        "assessment": null
+      }
+    }
+  }
+]

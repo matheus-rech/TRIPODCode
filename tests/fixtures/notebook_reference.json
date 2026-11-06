@@ -1,0 +1,37 @@
+{
+  "stage00": [
+    {
+      "PMID": 10,
+      "Title": "Alpha"
+    },
+    {
+      "PMID": 11,
+      "Title": "Beta"
+    },
+    {
+      "PMID": 12,
+      "Title": "Gamma"
+    }
+  ],
+  "stage01": [
+    {
+      "PMID": 10,
+      "Title": "Alpha",
+      "full_text": "Text alpha"
+    },
+    {
+      "PMID": 12,
+      "Title": "Gamma",
+      "full_text": "Text gamma"
+    }
+  ],
+  "stage02a": [
+    {
+      "PMID": 10,
+      "full_text": "Text alpha",
+      "gt_in_scope": true,
+      "gt_has_repo": false,
+      "gt_repo_url": null
+    }
+  ]
+}

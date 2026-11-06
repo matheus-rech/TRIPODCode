@@ -117,6 +117,7 @@ def get_tree(path: Path) -> List[RepoTree]:
 
 # file that will be excluded from the text string but are reported in the repo tree
 block_list = {
+    ".pdf", ".docx",  # opaque document parsers are outside bounded repository assessment
     ".pt",
     ".pth",
     ".pkl",
