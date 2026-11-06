@@ -46,7 +46,7 @@ export default function App(){
   return()=>{current=false;clearInterval(timer)};
  },[connection,jobId]);
  async function action(work:()=>Promise<void>){setBusy(true);setError('');setNotice('');try{await work()}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
- function chooseDataset(id:string){setDatasetId(id);setRecords([]);setOffset(0);setDetail(null)}
+ function chooseDataset(id:string){if(id!==datasetId||offset!==0)setRecords([]);setDatasetId(id);setOffset(0);setDetail(null)}
  async function loadDemo(){const d=await post<Dataset>(connection!,'/datasets/demo');await refresh();chooseDataset(d.id);setMode('demo');setNotice('Synthetic demonstration loaded. No network inference is used.');}
  async function importFile(file:File){
   if(file.size>25*1024*1024)throw new Error('The import limit is 25 MiB.');

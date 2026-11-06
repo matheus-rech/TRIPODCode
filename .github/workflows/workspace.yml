@@ -21,6 +21,7 @@ jobs:
             tests
             scripts
             pyproject.toml
+            MANIFEST.in
           sparse-checkout-cone-mode: false
       - uses: actions/setup-python@v5
         with:
@@ -42,6 +43,10 @@ jobs:
           python-version: '3.13'
       - run: python -m pip install -e '.[dev]'
       - run: npm install
+        working-directory: frontend
+      - name: Record generated lockfile for reproducible installation
+        run: python -c "import base64; print('NPMLOCK_BEGIN' + base64.b64encode(open('frontend/package-lock.json','rb').read()).decode() + 'NPMLOCK_END')"
+      - run: npm audit --audit-level=moderate
         working-directory: frontend
       - run: npm run build
         working-directory: frontend
@@ -65,3 +70,4 @@ jobs:
             frontend/dist
             frontend/package-lock.json
             frontend/playwright-report
+            frontend/test-results
