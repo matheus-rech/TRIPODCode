@@ -17,3 +17,5 @@ Official formats checked 2026-11-06:
 - https://v2.tauri.app/develop/sidecar/
 
 AGENTS.md and copilot-instructions.md provide shared guidance. Scoped instructions use applyTo frontmatter; reusable workflows use .github/prompts/*.prompt.md (IDE support varies). Tauri externalBin expects target-triple suffixes.
+
+The frozen Python backend has a bootloader parent and Python child. Rust starts it in a private Unix process group, requests cooperative shutdown, and terminates the group if the deadline expires. This prevents an orphan worker from holding the workspace lock after desktop quit. A native Rust regression exercises forced descendant cleanup; the bundle smoke exercises ordinary quit. See https://pyinstaller.org/en/stable/advanced-topics.html#bootloader. The official pinned Tauri CLI 2.12.4 is invoked through npx; Cargo arguments follow the double-dash separator. Both architecture builds at aab9fafd passed on 2026-11-06.

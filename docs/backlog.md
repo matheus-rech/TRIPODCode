@@ -1,10 +1,9 @@
 # Prioritized backlog
 
-Updated 2026-11-06. Delivered behavior is in system-overview; the following remains distinct from completed work.
+Updated 2026-11-06. The browser build and both native app/DMG builds, lifecycle smoke checks and forced-shutdown regression passed at aab9fafd; installer links are in docs/application.md. Delivered behavior is in system-overview; the following remains distinct from completed work.
 
 | Priority | Work | Acceptance evidence |
 |---|---|---|
-| P0 build gate | Final browser/native builds after fixes | Green commit-linked checks and app/DMG artifacts |
 | P0 distribution | Apple signing/notarization | Maintainer credentials and independent signed-install verification; no automatic release |
 | P1 scientific validation | Authorized real dataset with human adjudication | Protocol, budget, field coverage, disagreements and versioned results; synthetic demo is insufficient |
 | P1 usability | macOS WebView accessibility/user review | Keyboard, screen reader, zoom and interrupted-run review |

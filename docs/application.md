@@ -4,11 +4,20 @@ The workspace adds a local application to the original research repository. It d
 
 ## Install a macOS build
 
-Open the **macOS application build** workflow under [Actions](https://github.com/matheus-rech/TRIPODCode/actions/workflows/macos.yml), select a successful run and download the artifact for your Mac: aarch64-apple-darwin for Apple Silicon, x86_64-apple-darwin for Intel. Extract the artifact, open the DMG under the bundle directory and copy TRIPODCode.app to Applications.
+Open the **macOS application build** workflow under [Actions](https://github.com/matheus-rech/TRIPODCode/actions/workflows/macos.yml), select a run with a successful job for your architecture and download its artifact: aarch64-apple-darwin for Apple Silicon, x86_64-apple-darwin for Intel. Extract the artifact, open the DMG under the bundle directory and copy TRIPODCode.app to Applications.
 
-These development artifacts are not Developer ID signed/notarized. macOS may require its explicit Open Anyway approval for a trusted downloaded build. Do not disable Gatekeeper globally. Signed public distribution is a separate maintainer step. Current native verification targets macOS 15; the declared minimum 12.0 has not been independently tested on older systems.
+These development artifacts are not Developer ID signed/notarized. macOS may require its explicit Open Anyway approval for a trusted downloaded build. Do not disable Gatekeeper globally. Signed public distribution is a separate maintainer step. Current native verification targets macOS 26 (Apple Silicon) and macOS 15 (Intel); the declared minimum 12.0 has not been independently tested on older systems.
 
 The application bundles Python, its libraries and tokenizer vocabulary. No separate Conda, Node, Git, notebook or terminal server is needed for installed use. Launch TRIPODCode; it starts its local backend and connects automatically.
+
+Verified builds from commit `aab9fafd3314fda9aed7b1f0e784aac6cc33129e`:
+
+| Mac | Download | Native checks |
+|---|---|---|
+| Apple Silicon | [Unsigned arm64 installer artifact](https://github.com/matheus-rech/TRIPODCode/actions/runs/42272301370/artifacts/13532446203) | macOS 26: bundle, forced-shutdown regression, native launch/readiness/quit passed |
+| Intel | [Unsigned x86_64 installer artifact](https://github.com/matheus-rech/TRIPODCode/actions/runs/42272301370/artifacts/13532661633) | macOS 15: bundle, forced-shutdown regression, native launch/readiness/quit passed |
+
+Use the DMG inside the artifact; it preserves application executable permissions. GitHub may require sign-in to download Actions artifacts. Artifacts have GitHub retention limits; source and build instructions remain in this branch.
 
 ## Try it offline
 
@@ -57,7 +66,7 @@ Cancel stops after the current bounded operation. Closing the native application
 
 ## Development setup
 
-Use Python 3.13 and Node 22. The original Conda environment remains available for publication notebooks.
+Use Python 3.13 and Node 22.12+. The original Conda environment remains available for publication notebooks.
 
 ```bash
 git clone https://github.com/matheus-rech/TRIPODCode.git
@@ -87,13 +96,13 @@ Browser integration tests use scripts/wait_for_backend.py and the environment/to
 
 ## Build a macOS application
 
-Install Xcode command-line tools, Python 3.13, Node 22 and Rust on the target architecture, then run:
+Install Xcode command-line tools, Python 3.13, Node 22.12+ and Rust on the target architecture, then run:
 
 ```bash
 bash scripts/build_macos.sh
 ```
 
-The script builds a frozen Python sidecar, tests its independent startup/demo/export/persistence/shutdown, installs frontend dependencies from package-lock.json, tests/builds React, and builds Tauri using Cargo.lock. Outputs are under desktop/src-tauri/target/release/bundle (macos/*.app and dmg/*.dmg). Build on Apple Silicon for arm64 and Intel for x86_64; Python cross-compilation is not supported. Dependencies require network during building.
+The script builds a frozen Python sidecar, tests its independent startup/demo/export/persistence/shutdown, installs frontend dependencies from package-lock.json, tests/builds React, and builds Tauri using the pinned official @tauri-apps/cli 2.12.4 binary and Cargo.lock. Outputs are under desktop/src-tauri/target/release/bundle (macos/*.app and dmg/*.dmg). Build on Apple Silicon for arm64 and Intel for x86_64; Python cross-compilation is not supported. Dependencies require network during building.
 
 The Actions matrix additionally records the Python environment, Rust/Node versions, binary SHA-256 and source commit in its artifacts. Dependency lockfiles fix npm/Rust resolution; Python version ranges are resolved at build time and recorded by pip freeze/build-manifest. Reproducing a specific binary requires its recorded Python environment and matching native toolchain; the workflow is not a bit-for-bit reproducible-build guarantee.
 

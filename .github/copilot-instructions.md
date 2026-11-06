@@ -11,7 +11,7 @@ Legacy research: src/llm_utils, src/repo_utils and notebooks/00–04. Applicatio
 Development: python3.13 -m venv .venv; .venv/bin/python -m pip install -e '.[dev]'.
 Tests: .venv/bin/python -m pytest tests -q.
 Frontend: cd frontend && npm ci && npm test && npm run build.
-Desktop (macOS, Xcode command-line tools, Python 3.13, Node 22, Rust): bash scripts/build_macos.sh.
+Desktop (macOS, Xcode command-line tools, Python 3.13, Node 22.12+, Rust): bash scripts/build_macos.sh.
 Python tests/packaging and frontend compilation have executed in Actions. Consult docs/research/validation-plan.md for commit-specific evidence and remaining checks, and docs/application.md for setup/demo/installation. The original Conda setup remains in CONTRIBUTING.md.
 
 ## Research integrity
