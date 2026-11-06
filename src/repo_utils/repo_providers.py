@@ -4,7 +4,9 @@ from abc import ABC, abstractmethod
 from urllib.parse import urlparse
 import os
 import re
-import git
+import json
+from filelock import FileLock
+from .safety import cache_name, public_https, safe_extract_zip, safe_destination, download, request_public
 import shutil
 import subprocess
 from typing import List
@@ -98,17 +100,24 @@ class DefaultGitCloner(RepoCloner):
         :return: Path to the cloned repository.
         :rtype: Path
         """
-        parsed = urlparse(repo_url)
-        parts = [p for p in parsed.path.split("/") if p]
-        repo_name = os.path.splitext(parts[-1])[0] if parts else "unknown_repo"
-
-        repo_path = base_path / repo_name
-
-        if repo_path.exists() and any(repo_path.iterdir()):
-            return repo_path
-
+        public_https(repo_url)
+        identity = repo_url.rstrip('/').removesuffix('.git')
+        repo_path = base_path / cache_name(identity)
+        manifest = base_path / (repo_path.name + '.json')
         base_path.mkdir(parents=True, exist_ok=True)
-        git.Repo.clone_from(repo_url, repo_path, depth=1)
+        with FileLock(str(manifest) + '.lock', timeout=0):
+            if manifest.exists() and repo_path.is_dir():
+                if json.loads(manifest.read_text())['url'] == identity:
+                    return repo_path
+            if repo_path.exists():
+                raise ValueError('Incomplete cache; use a fresh cache directory')
+            subprocess.run(['git', '-c', 'core.hooksPath=/dev/null', '-c', 'protocol.file.allow=never',
+                            'clone', '--depth=1', '--', repo_url, str(repo_path)],
+                           check=True, timeout=120, capture_output=True,
+                           env={**os.environ, 'GIT_TERMINAL_PROMPT': '0', 'GIT_LFS_SKIP_SMUDGE': '1'})
+            commit = subprocess.run(['git', '-C', str(repo_path), 'rev-parse', 'HEAD'],
+                                    check=True, capture_output=True, text=True, timeout=10).stdout.strip()
+            manifest.write_text(json.dumps({'url': identity, 'commit': commit}))
         return repo_path
 
 
@@ -133,6 +142,8 @@ class ZenodoCloner(RepoCloner):
         :raises RuntimeError: If zenodo_get fails to download the record.
         """
         record_id = repo_url.rstrip("/").split("/")[-1]
+        if not record_id.isdigit():
+            raise ValueError("Invalid Zenodo record")
         repo_path = base_path / f"zenodo_{record_id}"
 
         # If already cloned, do nothing
@@ -149,6 +160,7 @@ class ZenodoCloner(RepoCloner):
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
                 text=True,
+                timeout=120,
             )
         except subprocess.CalledProcessError as e:
             subdirs = [p for p in repo_path.iterdir() if p.is_dir()]
@@ -174,7 +186,7 @@ class ZenodoCloner(RepoCloner):
                     for m in members
                     if "/" in m and not m.startswith("__MACOSX")
                 }
-                zf.extractall(repo_path)
+                safe_extract_zip(zip_path, repo_path)
 
             if len(top_levels) == 1:
                 root = repo_path / next(iter(top_levels))
@@ -210,11 +222,11 @@ class FigshareCloner(RepoCloner):
         :raises requests.HTTPError: If API requests fail.
         """
         article_id = repo_url.rstrip("/").split("/")[-1]
-        meta = requests.get(f"{self.API_BASE}{article_id}").json()
+        meta = request_public(f"{self.API_BASE}{article_id}").json()
         title = meta.get("title", f"figshare_{article_id}")
 
         safe_title = re.sub(r"[^a-zA-Z0-9._-]+", "_", title).strip("_")
-        repo_path = base_path / safe_title
+        repo_path = base_path / f"figshare_{article_id}"
 
         # Check if already cloned
         if repo_path.exists() and any(repo_path.iterdir()):
@@ -222,14 +234,14 @@ class FigshareCloner(RepoCloner):
 
         repo_path.mkdir(parents=True, exist_ok=True)
 
-        files = requests.get(f"{self.API_BASE}{article_id}/files").json()
+        files = request_public(f"{self.API_BASE}{article_id}/files").json()
+        if len(files) > 100:
+            raise ValueError('Record exceeds file limit')
+        remaining = 50 * 1024 * 1024
         for f in files:
-            path = repo_path / f["name"]
-            with requests.get(f["download_url"], stream=True) as r:
-                r.raise_for_status()
-                with open(path, "wb") as out:
-                    for chunk in r.iter_content(8192):
-                        out.write(chunk)
+            path = safe_destination(repo_path, f['name'])
+            path.parent.mkdir(parents=True, exist_ok=True)
+            remaining -= download(f['download_url'], path, max_bytes=remaining)
 
         return repo_path
 
@@ -255,6 +267,8 @@ class OSFCloner(RepoCloner):
         :raises RuntimeError: If the OSF project is inaccessible.
         """
         project_id = repo_url.rstrip("/").split("/")[-1]
+        if not re.fullmatch(r"[a-zA-Z0-9]+", project_id):
+            raise ValueError("Invalid OSF project")
         repo_path = base_path / project_id
 
         # Skip cloning if already done
@@ -270,6 +284,7 @@ class OSFCloner(RepoCloner):
                 check=True,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
+                timeout=120,
             )
         except subprocess.CalledProcessError as e:
             # Project inaccessible, private, deleted, or network failure
@@ -312,7 +327,7 @@ class DOICloner(RepoCloner):
         :raises requests.HTTPError: If DOI resolution fails.
         :raises RepoNotSupportedError: If the resolved URL is not supported.
         """
-        resp = requests.head(repo_url, allow_redirects=True)
+        resp = request_public(repo_url, method="HEAD")
         resp.raise_for_status()
 
         final_url = resp.url
@@ -361,7 +376,9 @@ def get_repo_cloner(repo_url: str) -> RepoCloner:
     domain = parsed_url.netloc
     domain = re.sub(r"^www\.", "", domain).lower()
 
-    if "doi.org" in domain or "dx.doi.org" in domain:
+    if parsed_url.scheme != 'https' or parsed_url.username or parsed_url.password or parsed_url.port not in (None, 443):
+        raise RepoNotSupportedError('Public HTTPS URLs without credentials are required')
+    if domain in ('doi.org', 'dx.doi.org'):
         return DOICloner()
 
     if domain in CLONER_MAP:

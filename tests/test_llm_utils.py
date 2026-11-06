@@ -17,7 +17,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from llm_utils.llm_wrapper import LLM_wrapper
+from llm_utils.llm_wrapper import LLM_wrapper, AssessmentError
 from llm_utils.structs import PaperAssessment, RepoAssessment, CodeStatementLocation
 from llm_utils.paper_assessment_prompt import PAPER_ASSESSMENT_PROMPT
 from llm_utils.repo_assessment_prompt import REPO_ASSESSMENT_PROMPT
@@ -316,26 +316,13 @@ class TestAssessOneRow:
         assert result.reason == "Success after retry"
         assert mock_openai_client.responses.parse.call_count == 2
 
-    def test_assess_one_row_returns_none_after_max_retries(self, mock_openai_client):
-        """Test that None is returned after max retries exhausted.
-
-        Note: The actual implementation returns None (implicit) when all retries
-        fail because the check `if attempt == max_retries` is never true in
-        range(max_retries).
-        """
-        mock_openai_client.responses.parse.side_effect = Exception("Persistent failure")
-
-        wrapper = LLM_wrapper(
-            model_name="gpt-4o",
-            system_prompt="Test",
-            output_format_class=SimpleOutput,
-        )
-
-        with patch("time.sleep"):  # Skip sleep during test
-            result = wrapper.assess_one_row("Test", max_retries=3)
-
-        # After retries exhausted, function returns None
-        assert result is None
+    def test_assess_one_row_raises_after_max_retries(self, mock_openai_client):
+        """Exhaustion is a typed failure, not a null assessment."""
+        mock_openai_client.responses.parse.side_effect = Exception("private provider detail")
+        wrapper = LLM_wrapper("gpt-4o", "Test", SimpleOutput)
+        with patch("time.sleep"), pytest.raises(AssessmentError, match="3 attempts"):
+            wrapper.assess_one_row("Test", max_retries=3)
+        assert mock_openai_client.responses.parse.call_count == 3
 
 
 # ============================================================================
@@ -547,8 +534,8 @@ class TestAssessDataframe:
             output_dir=str(output_dir),
         )
 
-        # Only 1 row should be processed (the one with generation=NA)
-        assert mock_openai_client.responses.parse.call_count == 1
+        # Unversioned model-only checkpoints cannot establish compatibility.
+        assert mock_openai_client.responses.parse.call_count == 3
 
 
 # ============================================================================

@@ -2,9 +2,9 @@ import os
 import json
 import pandas as pd
 from pathlib import Path
-from docx import Document
-from PyPDF2 import PdfReader
-import tiktoken
+
+
+
 import logging
 
 # Suppress PDF read warnings, when reading corrupted PDFs
@@ -34,10 +34,12 @@ def extract_text_from_file(filepath):
     ext = Path(filepath).suffix.lower()
     try:
         if ext == ".pdf":
+            from PyPDF2 import PdfReader
             reader = PdfReader(filepath)
             return "\n".join(page.extract_text() or "" for page in reader.pages)
 
         elif ext == ".docx":
+            from docx import Document
             doc = Document(filepath)
             return "\n".join(p.text for p in doc.paragraphs)
 
@@ -106,6 +108,7 @@ def tokenize_text(text, encoding_name="cl100k_base"):
     >>> enc.decode(tokens)
     'Hello, world!'
     """
+    import tiktoken
     enc = tiktoken.get_encoding(encoding_name)
-    tokens = enc.encode(text)
+    tokens = enc.encode(text, disallowed_special=())
     return tokens, enc

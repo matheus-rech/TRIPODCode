@@ -5,6 +5,7 @@ from enum import Enum
 from typing import List, Union, Optional
 from urllib.parse import urlparse
 import os
+from .safety import MAX_FILES, MAX_FILE
 from .repo_providers import get_repo_cloner, RepoNotSupportedError
 from .tokenizer import extract_text_from_file, tokenize_text
 
@@ -81,37 +82,37 @@ class RepoInfo(BaseModel):
     tree: List[RepoTree]
 
 
-def get_tree(path: Path) -> List[RepoTree]:
-    """
-    Recursively build a tree structure of files and directories.
-
-    Hidden files and directories (starting with ".") are excluded.
-
-    :param path: Root path to build the tree from.
-    :type path: Path
-    :return: List of RepoTree nodes representing files and subdirectories.
-    :rtype: list[RepoTree]
-
-    :Example:
-
-    >>> tree = get_tree(Path("/path/to/repo"))
-    >>> tree[0].name
-    'README.md'
-    """
-    tree = []
-    for item in path.iterdir():
-        if item.name.startswith("."):
+def _paths(root):
+    """Stable bounded traversal, shared by tree and content; never follow links."""
+    count = 0
+    for directory, dirs, files in os.walk(root, followlinks=False):
+        dirs[:] = sorted(d for d in dirs if not d.startswith('.') and d not in
+                         {'node_modules', '__pycache__', '.venv'} and
+                         not (Path(directory) / d).is_symlink())
+        if len(Path(directory).relative_to(root).parts) > 30:
+            dirs[:] = []
             continue
-        if item.is_dir():
-            tree.append(RepoTree(name=item.name, children=get_tree(item)))
-        else:
-            tree.append(
-                RepoTree(
-                    name=item.name,
-                )
-            )
+        for name in sorted(files):
+            path = Path(directory) / name
+            if name.startswith('.') or path.is_symlink() or not path.is_file():
+                continue
+            count += 1
+            if count > MAX_FILES:
+                raise ValueError('Repository exceeds file limit')
+            yield path
 
-    return tree
+def get_tree(path: Path) -> List[RepoTree]:
+    roots = {}
+    for file in sorted(_paths(path)):
+        current = roots
+        parts = file.relative_to(path).parts
+        for part in parts[:-1]:
+            current = current.setdefault(part, {})
+        current[parts[-1]] = None
+    def nodes(mapping):
+        return [RepoTree(name=name, children=nodes(child) if child is not None else None)
+                for name, child in sorted(mapping.items())]
+    return nodes(roots)
 
 
 # file that will be excluded from the text string but are reported in the repo tree
@@ -216,61 +217,33 @@ def read_all_files(base_path: Path, verbose: bool, context_window: int) -> str:
     >>> "FILE: README.md" in content
     True
     """
-    file_contents = []
-    total_tokens = 0
-
-    for file_path in base_path.rglob("*"):
-        if not file_path.is_file():
-            continue
-
-        rel_path = file_path.relative_to(base_path)
-        rel_path_str = str(rel_path)
-
-        is_readme = bool(re.match(r"readme(\.md|\.txt)?", rel_path_str, re.IGNORECASE))
-
-        # Skip ignored suffixes entirely
+    if context_window < 32:
+        raise ValueError('context_window must be at least 32')
+    content = ''
+    notice = '\n(REST OF THE REPOSITORY IS TRUNCATED)'
+    for file_path in sorted(_paths(base_path)):
         if file_path.suffix.lower() in block_list:
             continue
-
-        header = f"\n\nFILE: {rel_path_str}\n"
-
-        try:
-            # Get file content via your existing extractor
-            content = extract_text_from_file(file_path)
-
-            # Apply *per-file* cutoff only for non-allowlisted & non-readme files
-            if not (is_readme or file_path.suffix.lower() in allow_list):
-                tokens, enc = tokenize_text(content)
-                if len(tokens) > TOKEN_CUTOFF_PER_FILE:
-                    original_len = len(tokens)
-                    truncated_text = enc.decode(tokens[:TOKEN_CUTOFF_PER_FILE])
-                    content = (
-                        truncated_text
-                        + f"\n\n[... CONTENT TRUNCATED: {original_len:,} tokens > "
-                        f"{TOKEN_CUTOFF_PER_FILE:,} token limit ]"
-                    )
-
-            # Now compute tokens for what we plan to add (header + content)
-            segment = header + content
-            segment_tokens, _ = tokenize_text(segment)
-            segment_token_len = len(segment_tokens)
-
-            # If adding this file would exceed the global context window:
-            # only add the header and a repository-level truncation note, then stop.
-            if total_tokens + segment_token_len > context_window:
-                truncation_notice = "(REST OF THE REPOSITORY IS TRUNCATED)"
-                file_contents.append(header + truncation_notice)
-                break
-
-            # Otherwise, add it and update total
-            file_contents.append(segment)
-            total_tokens += segment_token_len
-
-        except Exception as e:
-            if verbose:
-                print(f"Skipping {file_path}: {e}")
-
-    return "\n".join(file_contents)
+        if file_path.stat().st_size > MAX_FILE:
+            segment = f'\n\nFILE: {file_path.relative_to(base_path)}\n[OMITTED: file exceeds byte limit]'
+        else:
+            text = extract_text_from_file(file_path)
+            if not text.strip():
+                continue
+            is_readme = bool(re.match(r'^readme(?:\.|$)', file_path.name, re.IGNORECASE))
+            tokens, enc = tokenize_text(text)
+            if not is_readme and file_path.suffix.lower() not in allow_list and len(tokens) > TOKEN_CUTOFF_PER_FILE:
+                text = enc.decode(tokens[:TOKEN_CUTOFF_PER_FILE]) + '\n[CONTENT TRUNCATED]'
+            segment = f'\n\nFILE: {file_path.relative_to(base_path)}\n{text}'
+        tokens, enc = tokenize_text(content + segment)
+        if len(tokens) > context_window:
+            marker, _ = tokenize_text(notice)
+            content = enc.decode(tokens[:max(0, context_window-len(marker)-4)]) + notice
+            while len(tokenize_text(content)[0]) > context_window:
+                content = content[:-len(notice)-1] + notice
+            break
+        content += segment
+    return content
 
 
 def clone_and_extract_tree(
@@ -338,6 +311,10 @@ def clone_and_extract_tree(
             f"\nFiles content\n{text}"
         )
 
+        tokens, enc = tokenize_text(output)
+        if len(tokens) > context_window:
+            marker = '\n[REPOSITORY TRUNCATED]'
+            output = enc.decode(tokens[:max(0, context_window-len(tokenize_text(marker)[0])-4)]) + marker
         return RepoExtractionResult(
             repo_url=repo_url,
             status=RepoStatus.OK,
