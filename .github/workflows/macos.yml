@@ -43,7 +43,7 @@ jobs:
         working-directory: frontend
       - run: npm test && npm run build
         working-directory: frontend
-      - run: npx --yes @tauri-apps/cli@2.12.4 build --locked
+      - run: npx --yes @tauri-apps/cli@2.12.4 build -- --locked
         working-directory: desktop/src-tauri
       - run: python scripts/smoke_desktop.py desktop/src-tauri/target/release/bundle/macos/TRIPODCode.app
       - name: Record resolved toolchain

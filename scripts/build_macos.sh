@@ -11,4 +11,4 @@ if test -f frontend/package-lock.json; then npm --prefix frontend ci; else npm -
 npm --prefix frontend test
 npm --prefix frontend run build
 cd desktop/src-tauri
-npx --yes @tauri-apps/cli@2.12.4 build --locked
+npx --yes @tauri-apps/cli@2.12.4 build -- --locked
