@@ -36,6 +36,7 @@ jobs:
             ~/.cargo/git
             desktop/src-tauri/target
           key: macos-${{ matrix.target }}-cargo-${{ hashFiles('desktop/src-tauri/Cargo.lock') }}
+          restore-keys: macos-${{ matrix.target }}-cargo-
       - run: python -m pip install -e '.[dev]'
       - run: python scripts/build_sidecar.py
       - run: python scripts/smoke_sidecar.py desktop/src-tauri/binaries/tripod-backend-${{ matrix.target }}
@@ -44,6 +45,8 @@ jobs:
       - run: npm test && npm run build
         working-directory: frontend
       - run: npx --yes @tauri-apps/cli@2.12.4 build -- --locked
+        working-directory: desktop/src-tauri
+      - run: cargo test --release --locked
         working-directory: desktop/src-tauri
       - run: python scripts/smoke_desktop.py desktop/src-tauri/target/release/bundle/macos/TRIPODCode.app
       - name: Record resolved toolchain

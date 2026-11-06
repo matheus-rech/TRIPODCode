@@ -95,7 +95,8 @@ fn start_backend(app: &tauri::AppHandle) -> Runtime {
             uuid::Uuid::new_v4().simple(),
             uuid::Uuid::new_v4().simple()
         );
-        let mut child=Command::new(backend_path()?).args(["--desktop","--data-dir"]).arg(root)
+        let mut command = isolated_command(backend_path()?);
+        let mut child=command.args(["--desktop","--data-dir"]).arg(root)
    .env("TRIPOD_SESSION_TOKEN",&token).env_remove("PYTHONPATH")
    .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null())
    .spawn().map_err(|_|"The bundled Python backend could not start. Reinstall the app or build the sidecar.")?;
@@ -127,8 +128,7 @@ fn start_backend(app: &tauri::AppHandle) -> Runtime {
                 child,
             )),
             _ => {
-                let _ = child.kill();
-                let _ = child.wait();
+                terminate_backend(&mut child);
                 Err("Backend readiness timed out. Another app may own this workspace, or the installation is incomplete.".into())
             }
         }
@@ -143,6 +143,30 @@ fn start_backend(app: &tauri::AppHandle) -> Runtime {
             child: Mutex::new(None),
         },
     }
+}
+
+fn isolated_command(path: PathBuf) -> Command {
+    let mut command = Command::new(path);
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
+    command
+}
+
+fn terminate_backend(child: &mut Child) {
+    #[cfg(unix)]
+    if let Ok(pid) = i32::try_from(child.id()) {
+        // PyInstaller has a bootloader parent and Python child. Killing only
+        // the parent can leave Python holding the workspace lock after quit.
+        // This group belongs exclusively to the process we spawned above.
+        unsafe {
+            libc::kill(-pid, libc::SIGKILL);
+        }
+    }
+    let _ = child.kill();
+    let _ = child.wait();
 }
 
 fn shutdown(runtime: &Runtime) {
@@ -164,8 +188,41 @@ fn shutdown(runtime: &Runtime) {
             std::thread::sleep(Duration::from_millis(50));
         }
         // In-flight records are recovered as interrupted on the next launch.
-        let _ = child.kill();
-        let _ = child.wait();
+        terminate_backend(child);
+    }
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn forced_shutdown_stops_the_spawned_process_group() {
+        let mut child = isolated_command(PathBuf::from("/bin/sh"))
+            .args(["-c", "sleep 30 & echo $!; wait"])
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let mut line = String::new();
+        BufReader::new(child.stdout.take().unwrap())
+            .read_line(&mut line)
+            .unwrap();
+        let descendant: i32 = line.trim().parse().unwrap();
+        assert_eq!(unsafe { libc::getpgid(descendant) }, child.id() as i32);
+        terminate_backend(&mut child);
+        for _ in 0..40 {
+            let state = Command::new("/bin/ps")
+                .args(["-o", "stat=", "-p", &descendant.to_string()])
+                .output()
+                .unwrap();
+            let state = String::from_utf8_lossy(&state.stdout);
+            // An orphan zombie has stopped and is awaiting the OS reaper.
+            if state.trim().is_empty() || state.trim().starts_with('Z') {
+                return;
+            }
+            std::thread::sleep(Duration::from_millis(50));
+        }
+        panic!("A descendant survived forced desktop shutdown");
     }
 }
 fn main() {
