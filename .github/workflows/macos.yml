@@ -1,6 +1,12 @@
 name: macOS application build
 on:
   workflow_dispatch:
+  push:
+    branches: [codex/research-workspace]
+    paths: ['src/**', 'backend/**', 'frontend/**', 'desktop/**', 'scripts/**', 'pyproject.toml', '.github/workflows/macos.yml']
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:

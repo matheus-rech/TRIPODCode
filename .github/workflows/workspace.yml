@@ -2,8 +2,11 @@ name: Research workspace
 on:
   pull_request:
   push:
-    branches: [codex/research-workspace]
+    branches: [main]
   workflow_dispatch:
+concurrency:
+  group: workspace-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
