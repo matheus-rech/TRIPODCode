@@ -1,0 +1,10 @@
+{
+  "identifier": "main",
+  "description": "Local research workspace. No remote content or generic shell access.",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default"
+  ]
+}
